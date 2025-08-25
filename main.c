@@ -13,6 +13,9 @@ int list_of_accounts();
 int see_individual_account();
 int daily_transaction();
 int edit_account();
+void modify_account();
+int close_account();
+int found_account(const char *filename,int temp_acc);
 void add_to_file(customer new,int n, const char *filename);
 
 int main(){
@@ -60,10 +63,15 @@ int open_new_account(){
     fgets(new.address, sizeof(new.address), stdin);
     printf("Enter initial deposit \n");
     scanf("%d",&new.initial_deposit);
+    if(new.initial_deposit<500){
+        printf("Initial deposit should not be less than 500 \n");
+        return 1;
+    }
     add_to_file(new,n,"initial.dat");
+
 }
 void add_to_file(customer new,int n, const char *filename){
-    FILE *fp = fopen( filename, "wb");
+    FILE *fp = fopen( filename, "ab");
     if (fp == NULL) {
         printf("Try again\n");
         return;
@@ -73,6 +81,7 @@ void add_to_file(customer new,int n, const char *filename){
         printf("Successfully created \n");
     }
     fclose(fp);
+    printf("Your Account number:%d",new.account_no);
 
 }
 int list_of_accounts(){
@@ -85,5 +94,79 @@ int daily_transaction(){
 
 }
 int edit_account(){
+    int choice;
+    printf("1.Modify Account \n");
+    printf("2.Close Account \n");
+    printf("3.Quit\n");
+    scanf("%d",&choice);
+    switch (choice)
+    {
+    case 1:
+        modify_account();
+        break;
+    case 2:
+        close_account();
+        break;
+    case 3:
+        return 0;;
+    default:
+        printf("invaild entry \n");
+    }
+    
+}
+void modify_account(){
 
+}
+int close_account(){
+    int temp_acc;
+    printf("Enter the account number\n");
+    scanf("%d",&temp_acc);
+    found_account("initial.dat",temp_acc);
+    FILE *fp = fopen("initial.dat","rb");
+    if(fp==NULL){
+        printf("File 1 not found \n");
+        return 0;
+    }
+    FILE *temp_fp = fopen("temp.dat","wb");
+    if(temp_fp==NULL){
+        printf("File 2 not found \n");
+        fclose(fp);
+        return 0;
+    }
+    customer temp;
+    int found = 0;
+    while (fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no!=temp_acc){
+            fwrite(&temp,sizeof(customer),1,temp_fp);
+        }else{
+            found = 1;
+        }
+    }
+    fclose(fp);
+    fclose(temp_fp);
+   if(found){
+    remove("initial.dat");
+    rename("temp.dat","initial.dat");
+    printf("Account deleted successfully\n");
+   } else{
+    remove("temp.dat");
+    printf("Account 2 number not found.\n");
+   }
+}
+int found_account(const char *filename,int temp_acc){
+    FILE *fp = fopen( filename, "rb");
+    if (fp == NULL) {
+        printf("Try again\n");
+        return 0;
+    }
+    customer temp;
+    while (fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no==temp_acc){
+            fclose(fp);
+            return 1;
+        }
+    }
+    fclose(fp);
+    printf("Account 1 number not found\n");
+    return 0;  
 }
