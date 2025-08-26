@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<string.h>
 typedef struct 
 {
     int account_no;
@@ -9,12 +10,15 @@ typedef struct
 
 int menu();
 int open_new_account();
+int last_accno();
 int list_of_accounts();
 int see_individual_account();
 int daily_transaction();
 int edit_account();
-void modify_account();
+int modify_account();
 int close_account();
+int name_modify(const char *filename,int temp_acc);
+int address_modify(const char *filename,int temp_acc);
 int found_account(const char *filename,int temp_acc);
 void add_to_file(customer new,int n, const char *filename);
 
@@ -56,18 +60,46 @@ int menu(){
 int open_new_account(){
     customer new;
  int n=1;
-    new.account_no = __INT_MAX__ - 1;
+    int last = last_accno();
+    new.account_no= last+1;
     printf("Enter your name:\n");
+
     fgets(new.name, sizeof(new.name), stdin);
+    new.name[strcspn(new.name, "\n")] = '\0';
+
     printf("Enter your address \n");
+    getchar();
     fgets(new.address, sizeof(new.address), stdin);
+    new.address[strcspn(new.address, "\n")] = '\0';
+
     printf("Enter initial deposit \n");
+    
     scanf("%d",&new.initial_deposit);
+    getchar();
     if(new.initial_deposit<500){
         printf("Initial deposit should not be less than 500 \n");
         return 1;
     }
+    printf("Your Account number:%d\n",new.account_no);
     add_to_file(new,n,"initial.dat");
+
+}
+int last_accno(){
+    FILE *fp = fopen("initial.dat","rb");
+    if(fp==NULL){
+        printf("Try again\n");
+        return 0;
+    }
+    customer temp;
+    int last_acc =0;
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no>last_acc){
+            last_acc=temp.account_no;
+        }
+    }
+    fclose(fp);
+    return last_acc;
+    
 
 }
 void add_to_file(customer new,int n, const char *filename){
@@ -81,14 +113,40 @@ void add_to_file(customer new,int n, const char *filename){
         printf("Successfully created \n");
     }
     fclose(fp);
-    printf("Your Account number:%d",new.account_no);
+    
 
 }
 int list_of_accounts(){
 
 }
 int see_individual_account(){
-
+    int temp_acc;
+    printf("Enter the account number\n");
+   
+    scanf("%d",&temp_acc);
+    getchar();
+    
+    int value=found_account("initial.dat",temp_acc);
+    if(value==0){
+        return 0;
+    }
+    FILE *fp = fopen("initial.dat","rb");
+    if(fp==NULL){
+        printf("Try again\n");
+        return 0;
+    }
+    customer temp;
+    int count =0;
+    
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no==temp_acc){
+            printf("Name:%s\n",temp.name);
+            printf("Address:%s\n",temp.address);
+            printf("Initial deposit:%d\n",temp.initial_deposit);
+            fclose(fp);
+            return 0;
+        }
+    }
 }
 int daily_transaction(){
 
@@ -114,12 +172,84 @@ int edit_account(){
     }
     
 }
-void modify_account(){
+int modify_account(){
+    int temp_acc;
+    int choice;
+    printf("Enter the account number\n");
+    scanf("%d",&temp_acc);
+    
+    int value=found_account("initial.dat",temp_acc);
+    if(value==0){
+        return 0;
+    }
+    printf("What do you want to modify\n1.Name\n2.Address\n");
+    scanf("%d",&choice);
+   
+    switch (choice)
+    {
+    case 1:
+        name_modify("initial.dat",temp_acc);
+        break;
+    case 2:
+        address_modify("initial.dat",temp_acc);
+        break;
+    default:
+        printf("Invalid choice\n");
+        break;
+    }
+}
+int name_modify(const char *filename,int temp_acc){
+    customer updated;
+    printf("Enter the new name\n");
+    getchar();
+    fgets(updated.name,sizeof(updated.name),stdin);
+    updated.name[strcspn(updated.name, "\n")] = '\0';
 
+    FILE *fp =fopen("initial.dat","rb+");
+    if(fp==NULL){
+        printf("cannot edit\n");
+        return 0;
+    }
+    customer temp;
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no==temp_acc){
+            strcpy(temp.name,updated.name);
+            fseek(fp,-sizeof(customer),SEEK_CUR);
+            fwrite(&temp,sizeof(customer),1,fp);
+            break;
+        }
+    }
+    fclose(fp);
+    printf("Name successfully changed\n");
+}
+int address_modify(const char *filename,int temp_acc){
+    customer updated;
+    printf("Enter the new Address\n");
+    getchar();
+    fgets(updated.address,sizeof(updated.address),stdin);
+    updated.address[strcspn(updated.address, "\n")] = '\0';
+
+    FILE *fp =fopen("initial.dat","rb+");
+    if(fp==NULL){
+        printf("cannot edit\n");
+        return 0;
+    }
+    customer temp;
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no==temp_acc){
+            strcpy(temp.address,updated.address);
+            fseek(fp,-sizeof(customer),SEEK_CUR);
+            fwrite(&temp,sizeof(customer),1,fp);
+            break;
+        }
+    }
+    fclose(fp);
+    printf("Address successfully changed\n");
 }
 int close_account(){
     int temp_acc;
     printf("Enter the account number\n");
+    getchar();
     scanf("%d",&temp_acc);
     found_account("initial.dat",temp_acc);
     FILE *fp = fopen("initial.dat","rb");
