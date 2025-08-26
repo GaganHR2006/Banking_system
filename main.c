@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<string.h>
+#include<time.h>
 typedef struct 
 {
     int account_no;
@@ -7,6 +8,22 @@ typedef struct
     char address[100];
     int initial_deposit;
 }customer;
+typedef struct {
+    int day;
+    int month;
+    int year;
+} Date;
+typedef struct 
+{
+    int account_no;
+    char tra_type[10];
+    Date date;
+    char tra[10];
+    int amount;
+    int balance;
+}info;
+
+
 
 int menu();
 int open_new_account();
@@ -14,6 +31,12 @@ int last_accno();
 int list_of_accounts();
 int see_individual_account();
 int daily_transaction();
+int deposit(int temp_acc,char tra[10]);
+int withdraw(int temp_acc,char tra[10]);
+int transaction(int temp_acc,char tra[10],char tra_type[10],int amount);
+int balance(int temp_acc,char tra[10],int amount);
+int update_balance(int temp_acc,int balance);
+Date get_current_date();
 int edit_account();
 int modify_account();
 int close_account();
@@ -149,8 +172,139 @@ int see_individual_account(){
     }
 }
 int daily_transaction(){
-
+    info temp;
+    customer old;
+    int temp_acc;
+    printf("Enter the account number\n");
+    scanf("%d",&temp_acc);
+    int value=found_account("initial.dat",temp_acc);
+    if (value==0){
+        return 0;
+    }
+    FILE *fp = fopen("initial.dat", "rb");
+    while (fread(&old, sizeof(customer), 1, fp) == 1) {
+        if (old.account_no == temp_acc) {
+        break;
+        }      
+    }
+    fclose(fp);
+    printf("Balance Amount:%d\n",old.initial_deposit);
+    printf("Enter D for Deposit\nEnter W for Withdrawal\n");
+    getchar();
+    fgets(temp.tra,sizeof(temp.tra),stdin);
+    temp.tra[strcspn(temp.tra, "\n")] = '\0';
+    if (strcmp(temp.tra, "D") == 0) {
+        deposit(temp_acc,temp.tra);
+    } else if (strcmp(temp.tra, "w") == 0) {
+       withdraw(temp_acc,temp.tra);
+    } else {
+        printf("Invalid action\n");
+    }
+return 1;
 }
+int deposit(int temp_acc,char tra[10]){
+    info temp;
+    printf("Enter the amount\n");
+    scanf("%d",&temp.amount);
+    printf("Enter the mode of transaction\n");
+    printf("Enter 'cash' or 'cheque'\n");
+    getchar();
+    fgets(temp.tra_type,sizeof(temp.tra_type),stdin);
+    temp.tra_type[strcspn(temp.tra_type, "\n")] = '\0';
+
+    if (strcmp(temp.tra_type, "cash") == 0) {
+        transaction(temp_acc,tra,temp.tra_type,temp.amount);
+    } else if (strcmp(temp.tra_type, "cheque") == 0) {
+        transaction(temp_acc,tra,temp.tra_type,temp.amount);
+    } else {
+        printf("Invalid action\n");
+    }
+return 1;   
+}
+int withdraw(int temp_acc,char tra[10]){
+    info temp;
+    printf("Enter the amount\n");
+    scanf("%d",&temp.amount);
+    printf("Enter the mode of transaction\n");
+    printf("Enter 'cash' or 'cheque'\n");
+    fgets(temp.tra_type,sizeof(temp.tra_type),stdin);
+    temp.tra_type[strcspn(temp.tra_type, "\n")] = '\0';
+
+   if (strcmp(temp.tra_type, "cash") == 0) {
+        transaction(temp_acc,tra,temp.tra_type,temp.amount);
+    } else if (strcmp(temp.tra_type, "cheque") == 0) {
+        transaction(temp_acc,tra,temp.tra_type,temp.amount);
+    } else {
+        printf("Invalid action\n");
+    }
+    return 1;
+}
+int transaction(int temp_acc,char tra[10],char tra_type[10],int amount){
+    info temp;
+    temp.date=get_current_date();
+    temp.balance=balance(temp_acc,tra,amount);
+    FILE *fp = fopen("banking.dat","ab");
+    if(fp==NULL){
+        printf("Try again");
+        return 0;
+    }
+    fwrite(&temp,sizeof(info),1,fp);
+    fclose(fp);
+    return 1;
+}
+int balance(int temp_acc,char tra[10],int amount){
+    customer temp;
+    info tempp;
+    FILE *fp = fopen("initial.dat", "rb");
+    while (fread(&temp, sizeof(customer), 1, fp) == 1) {
+        if (temp.account_no == temp_acc) {
+        break;
+        }      
+    }
+    fclose(fp);
+   
+    int balance=0;
+    if(strcmp(tra, "D") == 0){
+        balance=amount+temp.initial_deposit;
+    }
+    else{
+        balance=temp.initial_deposit-amount;
+    }
+    update_balance(temp_acc,balance);
+    return balance;
+}
+int update_balance(int temp_acc,int balance){
+   int value = found_account("initial.dat",temp_acc);
+    if(value==0){
+        printf("Unable to updated\n");
+        return 0;
+    }
+    FILE *fp = fopen("initial.dat","rb+");
+    customer temp;
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp_acc==temp.account_no){
+            temp.initial_deposit=balance;
+            fseek(fp,-sizeof(customer),SEEK_CUR);
+            fwrite(&temp,sizeof(customer),1,fp);
+            break;
+        }
+    }
+    fclose(fp);
+    printf("Balance Updated\n");
+    return 1;
+}
+Date get_current_date() {
+    time_t now = time(NULL);
+    struct tm *local = localtime(&now);
+
+    Date today;
+    today.day = local->tm_mday;
+    today.month = local->tm_mon + 1;
+    today.year = local->tm_year + 1900;
+
+    return today;
+}
+
 int edit_account(){
     int choice;
     printf("1.Modify Account \n");
