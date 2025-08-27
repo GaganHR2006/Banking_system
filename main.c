@@ -13,15 +13,17 @@ typedef struct {
     int month;
     int year;
 } Date;
-typedef struct 
-{
+
+typedef struct {
     int account_no;
-    char tra_type[10];
-    Date date;
-    char tra[10];
+    char tra[10];         
+    char tra_type[10];    
     int amount;
     int balance;
-}info;
+    int d_amount;
+    int w_amount;
+    Date date;
+} info;
 
 
 
@@ -174,6 +176,7 @@ int see_individual_account(){
         return 0;
     }
     customer temp;
+    info tempp;
     int count =0;
     
     while(fread(&temp,sizeof(customer),1,fp)==1){
@@ -182,9 +185,22 @@ int see_individual_account(){
             printf("Address:%s\n",temp.address);
             printf("Initial deposit:%d\n",temp.initial_deposit);
             fclose(fp);
-            return 0;
         }
     }
+    
+    FILE *fpp = fopen("banking.dat","rb");
+    if(fpp==NULL){
+        printf("Try again\n");
+        return 0;
+    }
+    printf("Date        Particular Deposit   Withdraw   Balance\n");
+    while(fread(&tempp,sizeof(info),1,fpp)==1){
+        if(tempp.account_no==temp_acc){
+            printf("%02d/%02d/%04d  %-10s %-10d %-10d %-10d\n",tempp.date.day,tempp.date.month,tempp.date.year,tempp.tra_type,tempp.d_amount,tempp.w_amount,tempp.balance);
+           
+        }
+    } fclose(fpp);
+    return 1;
 }
 int daily_transaction(){
     info temp;
@@ -210,7 +226,7 @@ int daily_transaction(){
     temp.tra[strcspn(temp.tra, "\n")] = '\0';
     if (strcmp(temp.tra, "D") == 0) {
         deposit(temp_acc,temp.tra);
-    } else if (strcmp(temp.tra, "w") == 0) {
+    } else if (strcmp(temp.tra, "W") == 0) {
        withdraw(temp_acc,temp.tra);
     } else {
         printf("Invalid action\n");
@@ -242,6 +258,7 @@ int withdraw(int temp_acc,char tra[10]){
     scanf("%d",&temp.amount);
     printf("Enter the mode of transaction\n");
     printf("Enter 'cash' or 'cheque'\n");
+    getchar();
     fgets(temp.tra_type,sizeof(temp.tra_type),stdin);
     temp.tra_type[strcspn(temp.tra_type, "\n")] = '\0';
 
@@ -255,14 +272,26 @@ int withdraw(int temp_acc,char tra[10]){
     return 1;
 }
 int transaction(int temp_acc,char tra[10],char tra_type[10],int amount){
-    info temp;
-    temp.date=get_current_date();
-    temp.balance=balance(temp_acc,tra,amount);
+    info temp = {0};
+    temp.account_no = temp_acc;
+    strcpy(temp.tra, tra);
+    strcpy(temp.tra_type, tra_type);
+    if(strcmp(temp.tra,"D")==0){
+        temp.d_amount = amount;
+        temp.w_amount = NULL;
+    }else{
+        temp.w_amount=amount;
+        temp.d_amount=NULL;
+    }
+    
+    temp.date = get_current_date();
+    temp.balance = balance(temp_acc, tra, amount);
     FILE *fp = fopen("banking.dat","ab");
     if(fp==NULL){
         printf("Try again");
         return 0;
     }
+
     fwrite(&temp,sizeof(info),1,fp);
     fclose(fp);
     return 1;
