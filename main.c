@@ -91,7 +91,7 @@ int open_new_account(){
     new.name[strcspn(new.name, "\n")] = '\0';
 
     printf("Enter your address \n");
-    getchar();
+   
     fgets(new.address, sizeof(new.address), stdin);
     new.address[strcspn(new.address, "\n")] = '\0';
 
@@ -140,7 +140,22 @@ void add_to_file(customer new,int n, const char *filename){
 
 }
 int list_of_accounts(){
-
+    FILE *fp = fopen("initial.dat","rb");
+    if(fp==NULL){
+        printf("try again\n");
+        return 0;
+    }
+    customer temp;
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        printf("Account Number:%d\n",temp.account_no);
+        printf("Name:%s\n",temp.name);
+        printf("Address:%s\n",temp.address);
+        printf("Balance:%d\n",temp.initial_deposit);
+        printf("\n");
+    }
+    fclose(fp);
+    return 1;
+    
 }
 int see_individual_account(){
     int temp_acc;
