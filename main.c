@@ -32,6 +32,7 @@ int open_new_account();
 int last_accno();
 int list_of_accounts();
 int see_individual_account();
+int monthly_report(int temp_acc);
 int daily_transaction();
 int deposit(int temp_acc,char tra[10]);
 int withdraw(int temp_acc,char tra[10]);
@@ -138,8 +139,26 @@ void add_to_file(customer new,int n, const char *filename){
         printf("Successfully created \n");
     }
     fclose(fp);
+    Date today;
+    today=get_current_date();
+    info temp;
+    temp.account_no=new.account_no;
+    temp.d_amount=new.initial_deposit;
+    temp.balance=new.initial_deposit;
+    strcpy(temp.tra_type,"initial");
+    strcpy(temp.tra,"D");
     
-
+    temp.amount=0;
+    temp.w_amount=0;
+    temp.date.day=today.day;
+    temp.date.month=today.month;
+    temp.date.year=today.year;
+    FILE *fpp =fopen("banking.dat","ab");
+    if(fpp==NULL){
+        printf("try again\n");
+        return;
+    }
+    size_t count = fwrite(&temp, sizeof(temp), n, fpp);
 }
 int list_of_accounts(){
     FILE *fp = fopen("initial.dat","rb");
@@ -147,20 +166,22 @@ int list_of_accounts(){
         printf("try again\n");
         return 0;
     }
+    int total=0;
     customer temp;
+    printf("Account Number    Name      Address          Balance\n");
     while(fread(&temp,sizeof(customer),1,fp)==1){
-        printf("Account Number:%d\n",temp.account_no);
-        printf("Name:%s\n",temp.name);
-        printf("Address:%s\n",temp.address);
-        printf("Balance:%d\n",temp.initial_deposit);
-        printf("\n");
+         total += temp.initial_deposit;
+        printf("%-17d %-9s %-16s %-10d\n",temp.account_no,temp.name,temp.address,temp.initial_deposit);
     }
     fclose(fp);
+    printf("\n");
+    printf("                    Total balance in bank is:%d",total);
     return 1;
     
 }
 int see_individual_account(){
     int temp_acc;
+    int choice;
     printf("Enter the account number\n");
    
     scanf("%d",&temp_acc);
@@ -170,6 +191,19 @@ int see_individual_account(){
     if(value==0){
         return 0;
     }
+    printf("Enter 1 for Global Report\nEnter 2 for Monthly Report\n");
+    scanf("%d",&choice);
+    switch(choice){
+        case 1:
+            break;
+        case 2:
+            monthly_report(temp_acc);
+            return 0;
+            break;
+        default:
+            printf("inavlid choice\n");
+            break;
+    }
     FILE *fp = fopen("initial.dat","rb");
     if(fp==NULL){
         printf("Try again\n");
@@ -178,16 +212,18 @@ int see_individual_account(){
     customer temp;
     info tempp;
     int count =0;
-    
+    Date today;
+    today=get_current_date();
     while(fread(&temp,sizeof(customer),1,fp)==1){
         if(temp.account_no==temp_acc){
-            printf("Name:%s\n",temp.name);
-            printf("Address:%s\n",temp.address);
-            printf("Initial deposit:%d\n",temp.initial_deposit);
+            printf("Account Number:%d          %s          Date:%02d/%02d/%04d\n",temp.account_no,temp.name,today.day,today.month,today.year);
+            printf("Global Report of Account\n\n");
             fclose(fp);
         }
     }
-    
+    int d_total=0;
+    int w_total=0;
+
     FILE *fpp = fopen("banking.dat","rb");
     if(fpp==NULL){
         printf("Try again\n");
@@ -197,11 +233,59 @@ int see_individual_account(){
     while(fread(&tempp,sizeof(info),1,fpp)==1){
         if(tempp.account_no==temp_acc){
             printf("%02d/%02d/%04d  %-10s %-10d %-10d %-10d\n",tempp.date.day,tempp.date.month,tempp.date.year,tempp.tra_type,tempp.d_amount,tempp.w_amount,tempp.balance);
-           
+            d_total+=tempp.d_amount;
+            w_total+=tempp.w_amount;
         }
     } fclose(fpp);
+    printf("\n");
+    printf("Total ->               %d       %d          %d",d_total,w_total,tempp.balance);
     return 1;
 }
+int monthly_report(int temp_acc){
+    int month;
+    Date c_month = get_current_date();
+    printf("Enter the Month\n");
+    scanf("%d",&month);
+
+        FILE *fp = fopen("initial.dat","rb");
+            if(fp==NULL){
+            printf("Try again\n");
+            return 0;
+    }
+    customer temp;
+    info tempp;
+    int count =0;
+    Date today;
+    today=get_current_date();
+    while(fread(&temp,sizeof(customer),1,fp)==1){
+        if(temp.account_no==temp_acc){
+            printf("Account Number:%d          %s          Date:%02d/%02d/%04d\n",temp.account_no,temp.name,today.day,today.month,today.year);
+            printf("Monthly Report of Account\n\n");
+            fclose(fp);
+        }
+    }
+    int d_total=0;
+    int w_total=0;
+
+    FILE *fpp = fopen("banking.dat","rb");
+    if(fpp==NULL){
+        printf("Try again\n");
+        return 0;
+    }
+    printf("Date        Particular Deposit   Withdraw   Balance\n");
+    while(fread(&tempp,sizeof(info),1,fpp)==1){
+        if((tempp.account_no==temp_acc)&&(tempp.date.month==month)){
+            printf("%02d/%02d/%04d  %-10s %-10d %-10d %-10d\n",tempp.date.day,tempp.date.month,tempp.date.year,tempp.tra_type,tempp.d_amount,tempp.w_amount,tempp.balance);
+            d_total+=tempp.d_amount;
+            w_total+=tempp.w_amount;
+        }
+    } fclose(fpp);
+    printf("\n");
+    printf("Total ->               %d       %d          %d\n",d_total,w_total,tempp.balance);
+    printf("Current Balance:%d\n",tempp.balance);
+    return 0;
+    }
+
 int daily_transaction(){
     info temp;
     customer old;
@@ -278,10 +362,10 @@ int transaction(int temp_acc,char tra[10],char tra_type[10],int amount){
     strcpy(temp.tra_type, tra_type);
     if(strcmp(temp.tra,"D")==0){
         temp.d_amount = amount;
-        temp.w_amount = NULL;
+        temp.w_amount = 0;
     }else{
         temp.w_amount=amount;
-        temp.d_amount=NULL;
+        temp.d_amount=0;
     }
     
     temp.date = get_current_date();
