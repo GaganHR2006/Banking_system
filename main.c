@@ -35,7 +35,7 @@ int see_individual_account();
 int monthly_report(int temp_acc);
 int daily_transaction();
 int deposit(int temp_acc,char tra[10]);
-int withdraw(int temp_acc,char tra[10]);
+int withdraw(int temp_acc,char tra[10],int balance);
 int transaction(int temp_acc,char tra[10],char tra_type[10],int amount);
 int balance(int temp_acc,char tra[10],int amount);
 int update_balance(int temp_acc,int balance);
@@ -87,16 +87,26 @@ int open_new_account(){
     customer new;
  int n=1;
     int last = last_accno();
-    new.account_no= last+1;
+    new.account_no= last+1;-
     printf("Enter your name:\n");
 
     fgets(new.name, sizeof(new.name), stdin);
+    
     new.name[strcspn(new.name, "\n")] = '\0';
+    if (strlen(new.name) == 0 || new.name[0] == ' ') {
+        printf("Invalid name\n");
+        return 0;
+    }
 
     printf("Enter your address \n");
    
     fgets(new.address, sizeof(new.address), stdin);
+
     new.address[strcspn(new.address, "\n")] = '\0';
+    if (strlen(new.address) == 0 || new.address[0] == ' ') {
+        printf("Invalid address\n");
+        return 0;
+    }
 
     printf("Enter initial deposit \n");
     
@@ -311,7 +321,7 @@ int daily_transaction(){
     if (strcmp(temp.tra, "D") == 0) {
         deposit(temp_acc,temp.tra);
     } else if (strcmp(temp.tra, "W") == 0) {
-       withdraw(temp_acc,temp.tra);
+       withdraw(temp_acc,temp.tra,old.initial_deposit);
     } else {
         printf("Invalid action\n");
     }
@@ -336,10 +346,14 @@ int deposit(int temp_acc,char tra[10]){
     }
 return 1;   
 }
-int withdraw(int temp_acc,char tra[10]){
+int withdraw(int temp_acc,char tra[10],int balance){
     info temp;
     printf("Enter the amount\n");
     scanf("%d",&temp.amount);
+    if(temp.amount>balance){
+        printf("insufficient balance\n");
+        return 0;
+    }
     printf("Enter the mode of transaction\n");
     printf("Enter 'cash' or 'cheque'\n");
     getchar();
