@@ -43,6 +43,7 @@ Date get_current_date();
 int edit_account();
 int modify_account();
 int close_account();
+int close_transactions(int temp_acc);
 int name_modify(const char *filename,int temp_acc);
 int address_modify(const char *filename,int temp_acc);
 int found_account(const char *filename,int temp_acc);
@@ -574,6 +575,40 @@ int close_account(){
     remove("initial.dat");
     rename("temp.dat","initial.dat");
     printf("Account deleted successfully\n");
+   } else{
+    remove("temp.dat");
+    printf("Account 2 number not found.\n");
+   }
+   close_transactions(temp_acc);
+}
+int close_transactions(int temp_acc){
+    
+    FILE *fp = fopen("banking.dat","rb");
+    if(fp==NULL){
+        printf("File 1 not found \n");
+        return 0;
+    }
+    FILE *temp_fp = fopen("temp.dat","wb");
+    if(temp_fp==NULL){
+        printf("File 2 not found \n");
+        fclose(fp);
+        return 0;
+    }
+    info temp;
+    int found = 0;
+    while (fread(&temp,sizeof(info),1,fp)==1){
+        if(temp.account_no!=temp_acc){
+            fwrite(&temp,sizeof(info),1,temp_fp);
+        }else{
+            found = 1;
+        }
+    }
+    fclose(fp);
+    fclose(temp_fp);
+   if(found){
+    remove("banking.dat");
+    rename("temp.dat","banking.dat");
+    printf("Transactions deleted successfully\n");
    } else{
     remove("temp.dat");
     printf("Account 2 number not found.\n");
